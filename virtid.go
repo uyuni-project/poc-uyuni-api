@@ -80,13 +80,12 @@ func (idc *VIDContext) ctxDigits() string {
 }
 
 /*
-Translation to the Virtual ID. The virtual ID consistsof
-the following format:
+Translation to the Virtual ID. The virtual ID consists of the following format:
 
 	 1 [max] [System ID]
 	 ^  ^     ^
 	 |  |     |
-	 |  |     +--- A regular Uyuni ID
+	 |  |     +--- A regular Uyuni's System ID
 	 |  +--------- Maximum number of Uyuni servers. Smaller numbers are padded with zero.
 	 +------------ Always 1
 */
