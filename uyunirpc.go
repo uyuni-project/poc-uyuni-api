@@ -3,7 +3,6 @@ package uyuniapi
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/kolo/xmlrpc"
 	"net/http"
 	"net/url"
@@ -55,8 +54,6 @@ func (rpc *RPCClient) getURL() string {
 	if rpc.port > 0 {
 		u.Host += ":" + strconv.Itoa(rpc.port)
 	}
-
-	print("--->>", u.String())
 
 	return fmt.Sprint(u)
 }
@@ -134,8 +131,6 @@ func (rpc *RPCClient) Call(method string, args ...interface{}) (interface{}, err
 	var ret interface{}
 	err := rpc.conn.Call(method, args, &ret)
 
-	spew.Dump(args)
-
 	return ret, err
 }
 
@@ -157,7 +152,7 @@ func NewRPCDemux(vm *VIDManager) *RPCDemux {
 	for _, fqdn := range rpmc.vidmanager.GetContextFQDNs() {
 		fmt.Println("Registering connection to", fqdn)
 		rpmc.clients[fqdn] = NewRPCClient(true).
-			SetHost("localhost").
+			SetHost(fqdn).
 			SetUser("admin").
 			SetPassword("admin").
 			SetPort(8000).
@@ -186,15 +181,26 @@ func (rpmc *RPCDemux) Call(method string, args ...interface{}) (interface{}, err
 			switch arg.(type) {
 			case *RPCSessionToken:
 				_args = append(_args, c_ref.getSID())
+			case int: // This is just a proof of concept for now. Need to find out ID reliably.
+				id, ctx := rpmc.vidmanager.ToSystemId(arg.(int))
+				if ctx != fqdn {
+					_args = nil
+					break
+				}
+				_args = append(_args, id)
 			default:
 				_args = append(_args, arg)
 			}
 		}
 
-		ret, err := c_ref.Call(method, _args)
+		if _args == nil {
+			continue
+		}
+
+		ret, err := c_ref.Call(method, _args...)
 
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 
 		demux.aggregate(fqdn, ret)
