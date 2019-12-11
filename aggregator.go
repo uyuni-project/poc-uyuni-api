@@ -25,20 +25,31 @@ func (agr *DataAggregator) aggregate(fqdn string, data interface{}) {
 
 // Multiplex data from different sources into one
 func (agr *DataAggregator) Multiplex() interface{} {
-	data, merged := agr.mergeStructs()
-	if !merged {
-		data = nil
+	data, muxed := agr.getMuxResult()
+	if !muxed {
+		data = agr.getSingleResult()
 	}
 
 	return data
 }
 
-func (agr *DataAggregator) mergeStructs() (interface{}, bool) {
+func (agr *DataAggregator) getSingleResult() interface{} {
+	for _, ctx := range agr.vidman.GetContextFQDNs() {
+		res := agr.shards[ctx]
+		if res != nil {
+			return agr.remapIds(ctx, res)
+		}
+	}
+	return nil
+}
+
+// Merge multiple structure results from different hosts, if any.
+func (agr *DataAggregator) getMuxResult() (interface{}, bool) {
 	var data interface{} = nil
 	if len(agr.shards) > 0 {
 		for _, rpcRef := range agr.vidman.GetContextFQDNs() {
 			res := agr.shards[rpcRef]
-			if reflect.TypeOf(res).Kind() == reflect.Slice {
+			if res != nil && reflect.TypeOf(res).Kind() == reflect.Slice {
 				if data == nil {
 					data = make([]interface{}, 0)
 				}
