@@ -11,28 +11,43 @@ import (
 	"strings"
 )
 
-type UyuniXMLRPCHandlers struct {
-	BaseURI    string
-	HandlerURI string
-	methodMap  map[string]map[string][]string
+type UyuniRPCHandler interface {
+	Handler(context *gin.Context)
+	Bind(server *RPCServer)
+	GetHandlerUri() string
 }
 
-func NewUyuniXMLRPCHandlers() *UyuniXMLRPCHandlers {
-	handlers := new(UyuniXMLRPCHandlers)
-	handlers.BaseURI = "/uyuni"
-	handlers.HandlerURI = handlers.BaseURI + "/*method"
+type UyuniXMLRPCHandler struct {
+	baseURI    string
+	handlerURI string
+	methodMap  map[string]map[string][]string
+	rpc        *RPCServer
+}
 
-	return handlers
+func NewUyuniXMLRPCHandler() *UyuniXMLRPCHandler {
+	h := new(UyuniXMLRPCHandler)
+	h.baseURI = "/uyuni"
+	h.handlerURI = h.baseURI + "/*method"
+
+	return h
+}
+
+func (h *UyuniXMLRPCHandler) Bind(server *RPCServer) {
+	h.rpc = server
+}
+
+func (h *UyuniXMLRPCHandler) GetHandlerUri() string {
+	return h.handlerURI
 }
 
 // Get methods map
-func (h *UyuniXMLRPCHandlers) getMethodMap() map[string][]string {
+func (h *UyuniXMLRPCHandler) getMethodMap() map[string][]string {
 	return h.methodMap["xmlrpc"]
 }
 
 // SetMethodMap loads YAML spec of all XML-RPC API of Uyuni server
 // to support keyword arguments alongside positional parameters
-func (h *UyuniXMLRPCHandlers) SetMethodMap(path string) {
+func (h *UyuniXMLRPCHandler) SetMethodMap(path string) {
 	fh, err := os.Open(path)
 	if err != nil {
 		panic("Error open XML-RPC map:" + err.Error())
@@ -50,7 +65,7 @@ func (h *UyuniXMLRPCHandlers) SetMethodMap(path string) {
 }
 
 // Realign arguments for XML-RPC endpoint
-func (h *UyuniXMLRPCHandlers) queryToArgs(method string, args url.Values) []interface{} {
+func (h *UyuniXMLRPCHandler) queryToArgs(method string, args url.Values) []interface{} {
 	paramOrder, exists := h.getMethodMap()[method]
 	if !exists {
 		panic("Method " + method + " is not declared in argmap.")
@@ -73,7 +88,7 @@ func (h *UyuniXMLRPCHandlers) queryToArgs(method string, args url.Values) []inte
 }
 
 // Handle XML-RPC methods via REST
-func (h *UyuniXMLRPCHandlers) Handler(context *gin.Context) {
+func (h *UyuniXMLRPCHandler) Handler(context *gin.Context) {
 	method := strings.ReplaceAll(strings.TrimLeft(context.Param("method"), "/"), "/", ".")
 	args := context.Request.URL.Query()
 

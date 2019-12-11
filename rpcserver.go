@@ -21,8 +21,13 @@ func NewRPCServer() *RPCServer {
 	return srv
 }
 
-func (srv *RPCServer) AddHandler(uri string, handler gin.HandlerFunc) {
-	srv.router.Any(uri, handler)
+//func (srv *RPCServer) AddHandler(uri string, handler gin.HandlerFunc) {
+//	srv.router.Any(uri, handler)
+//}
+
+func (srv *RPCServer) AddHandler(handler UyuniRPCHandler) {
+	handler.Bind(srv)
+	srv.router.Any(handler.GetHandlerUri(), handler.Handler)
 }
 
 // Setup is to update configuration of the server
