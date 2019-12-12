@@ -1,13 +1,13 @@
 package uyuniapi
 
 import (
-	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
 	"github.com/go-yaml/yaml"
 	"io/ioutil"
+	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -15,12 +15,13 @@ type UyuniRPCHandler interface {
 	Handler(context *gin.Context)
 	Bind(server *RPCServer)
 	GetHandlerUri() string
+	GetHTTPMethods() []string
 }
 
 type UyuniXMLRPCHandler struct {
 	baseURI    string
 	handlerURI string
-	methodMap  map[string]map[string][]string
+	methodMap  map[string]map[string][]map[string]string
 	rpc        *RPCServer
 }
 
@@ -32,6 +33,11 @@ func NewUyuniXMLRPCHandler() *UyuniXMLRPCHandler {
 	return h
 }
 
+// Return supported methods for the proxy handler
+func (h *UyuniXMLRPCHandler) GetHTTPMethods() []string {
+	return []string{"GET", "POST"}
+}
+
 func (h *UyuniXMLRPCHandler) Bind(server *RPCServer) {
 	h.rpc = server
 }
@@ -41,7 +47,7 @@ func (h *UyuniXMLRPCHandler) GetHandlerUri() string {
 }
 
 // Get methods map
-func (h *UyuniXMLRPCHandler) getMethodMap() map[string][]string {
+func (h *UyuniXMLRPCHandler) getMethodMap() map[string][]map[string]string {
 	return h.methodMap["xmlrpc"]
 }
 
@@ -61,7 +67,6 @@ func (h *UyuniXMLRPCHandler) SetMethodMap(path string) {
 	if err := yaml.Unmarshal(mapBytes, &h.methodMap); err != nil {
 		panic("Error parsing XML-RPC map:" + err.Error())
 	}
-	spew.Dump(h.methodMap)
 }
 
 // Realign arguments for XML-RPC endpoint
@@ -70,14 +75,12 @@ func (h *UyuniXMLRPCHandler) queryToArgs(method string, args url.Values) []inter
 	if !exists {
 		panic("Method " + method + " is not declared in argmap.")
 	}
-	params := make([]interface{}, 0)
 
+	params := make([]interface{}, 0)
 	for _, argname := range paramOrder {
-		param, exists := args[argname]
-		if !exists {
-			panic("Method " + method + " has no parameter " + argname)
+		for pName := range argname {
+			params = append(params, h.cast(argname[pName], args.Get(pName)))
 		}
-		params = append(params, param)
 	}
 
 	if len(params) != len(args) {
@@ -87,17 +90,48 @@ func (h *UyuniXMLRPCHandler) queryToArgs(method string, args url.Values) []inter
 	return params
 }
 
+// Cast GET/POST types
+func (h *UyuniXMLRPCHandler) cast(ptype string, value string) interface{} {
+	var param interface{}
+	switch ptype {
+	case "int":
+		v, err := strconv.Atoi(value)
+		if err != nil {
+			param = value
+		} else {
+			param = v
+		}
+	case "datetime":
+		param = value // todo
+	default:
+		param = value
+	}
+
+	return param
+}
+
 // Handle XML-RPC methods via REST
 func (h *UyuniXMLRPCHandler) Handler(context *gin.Context) {
 	method := strings.ReplaceAll(strings.TrimLeft(context.Param("method"), "/"), "/", ".")
-	args := context.Request.URL.Query()
+	var params []interface{}
+	switch context.Request.Method {
+	case http.MethodGet:
+		params = h.queryToArgs(method, context.Request.URL.Query())
+	case http.MethodPost:
+		err := context.Request.ParseForm()
+		if err != nil {
+			panic("Unable to parse data from the form")
+		}
+		params = h.queryToArgs(method, context.Request.PostForm)
+	default:
+		panic("Method " + context.Request.Method + " is not supported")
+	}
 
-	fmt.Println("\n\n\nMethod:", method)
-	fmt.Println("Arguments:")
-	spew.Dump(args)
+	out, err := h.rpc.mux.Call(method, params...)
 
-	fmt.Println("Parameters:")
-	spew.Dump(h.queryToArgs(method, args))
+	if err != nil {
+		panic(err)
+	}
 
-	context.JSON(200, gin.H{"foo": "bar"})
+	context.JSON(200, out)
 }
