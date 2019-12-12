@@ -44,6 +44,7 @@ func (srv *RPCServer) Setup(config interface{}) *RPCServer {
 	if !srv.setup {
 		// Add sources
 		srv.vdm.AddContext("localhost")
+		srv.mux.ReloadVIDManager()
 
 		// Basic router middleware setup
 		srv.router.Use(gin.Logger())

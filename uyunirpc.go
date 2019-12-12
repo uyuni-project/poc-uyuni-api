@@ -149,6 +149,12 @@ func NewRPCDemux(vm *VIDManager) *RPCDemux {
 	rpmc := new(RPCDemux)
 	rpmc.clients = make(map[string]*RPCClient)
 	rpmc.vidmanager = vm
+	rpmc.ReloadVIDManager()
+
+	return rpmc
+}
+
+func (rpmc *RPCDemux) ReloadVIDManager() {
 	for _, fqdn := range rpmc.vidmanager.GetContextFQDNs() {
 		fmt.Println("Registering connection to", fqdn)
 		rpmc.clients[fqdn] = NewRPCClient(true).
@@ -159,8 +165,6 @@ func NewRPCDemux(vm *VIDManager) *RPCDemux {
 			SetTLS(false, false).
 			Connect()
 	}
-
-	return rpmc
 }
 
 // Marker for a token. This is just a dummy type that is used to be a placeholder
