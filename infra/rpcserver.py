@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.8
 
 from xmlrpc.server import SimpleXMLRPCServer
 from xmlrpc.server import SimpleXMLRPCRequestHandler
@@ -10,23 +10,23 @@ def list_systems(session):
         {
             "id": 1000010000,
             "name": "foo.acme.com",
-            "last_checkin": datetime.datetime.now().isoformat(),
-            "last_boot": datetime.datetime.now().isoformat(),
-            "created": datetime.datetime.now().isoformat(),
+            "last_checkin": datetime.datetime.now(),
+            "last_boot": datetime.datetime.now(),
+            "created": datetime.datetime.now(),
         },
         {
             "id": 1000010001,
             "name": "bar.acme.com",
-            "last_checkin": datetime.datetime.now().isoformat(),
-            "last_boot": datetime.datetime.now().isoformat(),
-            "created": datetime.datetime.now().isoformat(),
+            "last_checkin": datetime.datetime.now(),
+            "last_boot": datetime.datetime.now(),
+            "created": datetime.datetime.now(),
         },
         {
             "id": 1000010002,
             "name": "spam.acme.com",
-            "last_checkin": datetime.datetime.now().isoformat(),
-            "last_boot": datetime.datetime.now().isoformat(),
-            "created": datetime.datetime.now().isoformat(),
+            "last_checkin": datetime.datetime.now(),
+            "last_boot": datetime.datetime.now(),
+            "created": datetime.datetime.now(),
         },
     ]
 
@@ -46,7 +46,7 @@ def get_details(sesssion, serverid):
         "building": "", "room": "", "rack": "",
         "description": servers[serverid] + " machine",
         "hostname": servers[serverid],
-        "last_boot": datetime.datetime.now().isoformat(),
+        "last_boot": datetime.datetime.now(),
         "osa_status": 'unknown', "lock_status": False, "virtualization": "",
     }
 
