@@ -1,6 +1,8 @@
 package uyuniapi
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+)
 
 type RPCServer struct {
 	vdm    *VIDManager
@@ -21,13 +23,20 @@ func NewRPCServer() *RPCServer {
 	return srv
 }
 
-//func (srv *RPCServer) AddHandler(uri string, handler gin.HandlerFunc) {
-//	srv.router.Any(uri, handler)
-//}
-
 func (srv *RPCServer) AddHandler(handler UyuniRPCHandler) {
 	handler.Bind(srv)
-	srv.router.Any(handler.GetHandlerUri(), handler.Handler)
+	for _, httpMethod := range handler.GetHTTPMethods() {
+		var reg func(string, ...gin.HandlerFunc) gin.IRoutes
+		switch httpMethod {
+		case "POST":
+			reg = srv.router.POST
+		case "GET":
+			reg = srv.router.GET
+		default:
+			reg = srv.router.Any
+		}
+		reg(handler.GetHandlerUri(), handler.Handler)
+	}
 }
 
 // Setup is to update configuration of the server
