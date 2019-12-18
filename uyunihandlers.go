@@ -21,7 +21,7 @@ type UyuniRPCHandler interface {
 type UyuniXMLRPCHandler struct {
 	baseURI    string
 	handlerURI string
-	methodMap  map[string]map[string][]map[string]string
+	methodMap  map[string][]map[string][]map[string]string
 	rpc        *RPCServer
 }
 
@@ -47,8 +47,20 @@ func (h *UyuniXMLRPCHandler) GetHandlerUri() string {
 }
 
 // Get methods map
-func (h *UyuniXMLRPCHandler) getMethodMap() map[string][]map[string]string {
-	return h.methodMap["xmlrpc"]
+func (h *UyuniXMLRPCHandler) getMethodMap(method string) []map[string]string {
+	xmlrpcTree, exists := h.methodMap["xmlrpc"]
+	if !exists {
+		panic("XML-RPC spec is missing")
+	}
+
+	for _, xmap := range xmlrpcTree {
+		for mName, mArgs := range xmap {
+			if mName == method {
+				return mArgs
+			}
+		}
+	}
+	return nil
 }
 
 // SetMethodMap loads YAML spec of all XML-RPC API of Uyuni server
@@ -71,10 +83,7 @@ func (h *UyuniXMLRPCHandler) SetMethodMap(path string) {
 
 // Realign arguments for XML-RPC endpoint
 func (h *UyuniXMLRPCHandler) queryToArgs(method string, args url.Values) []interface{} {
-	paramOrder, exists := h.getMethodMap()[method]
-	if !exists {
-		panic("Method " + method + " is not declared in argmap.")
-	}
+	paramOrder := h.getMethodMap(method)
 
 	params := make([]interface{}, 0)
 	for _, argname := range paramOrder {
