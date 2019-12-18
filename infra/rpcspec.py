@@ -78,20 +78,23 @@ class APIGen:
         """
         Generate YAML.
         """
-        data = {}
+        data = []
         for src in self.sources:
             # self._get_src_spec(src)  # Doc is very inaccurate :-(
-            data.update(CodeSpec(src).spec)
+            data.append(CodeSpec(src).spec)
 
         print("# Automatically generated specs")
         print("# XML-RPC calls:", len(data))
         print()
         print("xmlrpc:")
-        for ns in sorted(data):
-            print("  {}:".format(ns))
-            for ptype in data[ns]:
-                print("    - {}: {}".format(*tuple(ptype.items())[0]))
-            print()
+        for ns in data:
+            for f_ns in ns:
+                for namespace in f_ns:
+                    print("  -", namespace)
+                    for arg in f_ns[namespace]:
+                        for arg_name, arg_value in arg.items():
+                            print("    - {}: {}".format(arg_name, arg_value))
+                    print()
 
 
 class CodeSpec:
@@ -99,7 +102,7 @@ class CodeSpec:
     Get codespec from the Java source file.
     """
     def __init__(self, source: APISource):
-        self.spec = {}
+        self.spec = []
         self.src = source
         self._funcs = []
         self._re_kg = re.compile("<.*?>+|\[.*?\]+")
@@ -110,13 +113,13 @@ class CodeSpec:
         """
         Generate codespec.
 
-        {
+        [
             "namespace.function": {
                 [
                     {"argname": "type"},
                 ]
             }
-        }
+        ]
         """
 
     def _parse_func(self, data: str):
@@ -218,7 +221,7 @@ class CodeSpec:
 
                 if funcbuff and ")" in src_line:
                     func = self._parse_func(" ".join(funcbuff))
-                    self.spec.update(func.get())
+                    self.spec.append(func.get())
                     funcbuff = []
                     p = False
 
@@ -236,9 +239,8 @@ def main():
             apigen.generate()
         except Exception as err:
             print(err)
+            raise
 
-# TODO: Add overloaded methods.
-#       This would require YAML spec format change
-#       both on API Gateway side and here
+
 if __name__ == "__main__":
     main()
