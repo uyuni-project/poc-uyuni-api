@@ -90,7 +90,7 @@ class APIGen:
         for ns in data:
             for f_ns in ns:
                 for namespace in f_ns:
-                    print("  -", namespace)
+                    print("  - {}:".format(namespace))
                     for arg in f_ns[namespace]:
                         for arg_name, arg_value in arg.items():
                             print("    - {}: {}".format(arg_name, arg_value))
