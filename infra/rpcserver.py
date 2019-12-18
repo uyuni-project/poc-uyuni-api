@@ -58,8 +58,8 @@ class RequestHandler(SimpleXMLRPCRequestHandler):
 
 with SimpleXMLRPCServer(('localhost', 8000),
                         requestHandler=RequestHandler) as server:
-    server.register_function(list_systems, "systems.listSystems")
-    server.register_function(get_details, "systems.getDetails")
+    server.register_function(list_systems, "system.listSystems")
+    server.register_function(get_details, "system.getDetails")
     server.register_function(auth, "auth.login")
 
     print("Starting server...")
