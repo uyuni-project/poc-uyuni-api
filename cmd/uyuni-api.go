@@ -1,16 +1,16 @@
 package main
 
 import (
-	"fmt"
 	"github.com/isbm/uyuni-api"
 )
 
 func main() {
-	vm := uyuniapi.NewVIDManager()
-	vm.AddContext("localhost")
+	hdl := uyuniapi.NewUyuniXMLRPCHandler()
+	hdl.SetMethodMap("mgr-api.spec.conf")
 
-	mux := uyuniapi.NewRPCDemux(vm)
-	data, _ := mux.Call("systems.listSystems", mux.GetSIDMarker())
+	cfg := uyuniapi.NewAPIConfig("mgr-api.conf")
 
-	fmt.Println(data)
+	rpc := uyuniapi.NewRPCServer()
+	rpc.AddHandler(hdl)
+	rpc.Setup(cfg).Start()
 }
