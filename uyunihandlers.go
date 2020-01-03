@@ -88,7 +88,11 @@ func (h *UyuniXMLRPCHandler) queryToArgs(method string, args url.Values) []inter
 	params := make([]interface{}, 0)
 	for _, argname := range paramOrder {
 		for pName := range argname {
-			params = append(params, h.cast(argname[pName], args.Get(pName)))
+			if pName == "sessionKey" {  // XXX: This relies on spec, needs config or optionals (e.g. pName in array of those names)
+				params = append(params, h.rpc.mux.GetSIDMarker())
+			} else {
+				params = append(params, h.cast(argname[pName], args.Get(pName)))
+			}
 		}
 	}
 
