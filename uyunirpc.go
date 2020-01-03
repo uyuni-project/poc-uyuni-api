@@ -143,6 +143,7 @@ type RPCSessionToken struct{}
 type RPCDemux struct {
 	clients    map[string]*RPCClient
 	vidmanager *VIDManager
+	config     *APIConfig
 }
 
 func NewRPCDemux(vm *VIDManager) *RPCDemux {
@@ -154,16 +155,25 @@ func NewRPCDemux(vm *VIDManager) *RPCDemux {
 	return rpmc
 }
 
+// Set current configuration
+func (rpmc *RPCDemux) SetConfig(config *APIConfig) {
+	if rpmc.config == nil {
+		rpmc.config = config
+	}
+}
+
 func (rpmc *RPCDemux) ReloadVIDManager() {
 	for _, fqdn := range rpmc.vidmanager.GetContextFQDNs() {
 		fmt.Println("Registering connection to", fqdn)
-		rpmc.clients[fqdn] = NewRPCClient(true).
-			SetHost(fqdn).
-			SetUser("admin").
-			SetPassword("admin").
-			SetPort(8000).
-			SetTLS(false, false).
-			Connect()
+		if _, isSet := rpmc.clients[fqdn]; !isSet {
+			serverConf := rpmc.config.GetRefServerConfig(fqdn)
+			rpcClient := NewRPCClient(true).SetHost(fqdn).
+				SetUser(serverConf["login"].(string)).
+				SetPassword(serverConf["password"].(string)).
+				SetPort(serverConf["port"].(int)).
+				SetTLS(serverConf["use_ssl"].(bool), serverConf["verify_ssl"].(bool))
+			rpmc.clients[fqdn] = rpcClient.Connect()
+		}
 	}
 }
 
