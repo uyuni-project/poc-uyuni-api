@@ -9,6 +9,7 @@ type RPCServer struct {
 	mux    *RPCDemux
 	router *gin.Engine
 	setup  bool
+	cfg    *APIConfig
 }
 
 // Constructor
@@ -40,10 +41,16 @@ func (srv *RPCServer) AddHandler(handler UyuniRPCHandler) {
 }
 
 // Setup is to update configuration of the server
-func (srv *RPCServer) Setup(config interface{}) *RPCServer {
+func (srv *RPCServer) Setup(config *APIConfig) *RPCServer {
 	if !srv.setup {
-		// Add sources
-		srv.vdm.AddContext("localhost")
+		srv.cfg = config
+
+		// Add context sources
+		for fqdn, _ := range srv.cfg.GetHosts("uyuni") {
+			srv.vdm.AddContext(fqdn)
+		}
+
+		srv.mux.SetConfig(srv.cfg)
 		srv.mux.ReloadVIDManager()
 
 		// Basic router middleware setup
