@@ -46,12 +46,11 @@ func (srv *RPCServer) Setup(config *APIConfig) *RPCServer {
 		srv.cfg = config
 
 		// Add context sources
-		for fqdn, _ := range srv.cfg.GetHosts("uyuni") {
+		for fqdn := range srv.cfg.GetHosts("uyuni") {
 			srv.vdm.AddContext(fqdn)
 		}
 
-		srv.mux.SetConfig(srv.cfg)
-		srv.mux.ReloadVIDManager()
+		srv.mux.SetConfig(srv.cfg).ReloadVIDManager()
 
 		// Basic router middleware setup
 		srv.router.Use(gin.Logger())

@@ -156,10 +156,12 @@ func NewRPCDemux(vm *VIDManager) *RPCDemux {
 }
 
 // Set current configuration
-func (rpmc *RPCDemux) SetConfig(config *APIConfig) {
+func (rpmc *RPCDemux) SetConfig(config *APIConfig) *RPCDemux {
 	if rpmc.config == nil {
 		rpmc.config = config
 	}
+
+	return rpmc
 }
 
 func (rpmc *RPCDemux) ReloadVIDManager() {
