@@ -2,14 +2,23 @@
 RPC Client for REST over XML-RPC.
 Author: bo@suse.de
 """
-from typing import Optional
+from typing import Optional, Dict
+import datetime
 import requests
+import yaml
 
 
 class RESTCall:
     """
     REST call object.
     """
+    _TYPEMAP = {
+        "string": str,
+        "int": int,
+        "bool": bool,
+        "datetime": datetime.datetime  # ??
+    }
+
     def __init__(self, url: str, obj: str):
         """
         __init__ constructor
@@ -17,9 +26,9 @@ class RESTCall:
         :param url: URL
         :type url: str
         """
-        self.__root = url.strip("/")
-        self.__path = [obj]
-        self.__xmlrpc_spec = None
+        self._root = url.strip("/")
+        self._path = [obj]
+        self._xmlrpc_spec = None
 
     def lock(self) -> None:
         """
@@ -38,7 +47,7 @@ class RESTCall:
         :return: RESTCall object
         :rtype: RESTCall
         """
-        self.__xmlrpc_spec = requests.get("{}/{}".format(self.__root, uri.strip("/")))
+        self._xmlrpc_spec = requests.get("{}/{}".format(self.__root, uri.strip("/")))
         self.lock()
 
         return self
@@ -50,31 +59,74 @@ class RESTCall:
         :return: True if node is root.
         :rtype: bool
         """
-        return self.__root is None
+        return self._root is None
 
     def __getattr__(self, attr):
-        if attr not in self.__dict__ or self.__dict__[attr] is None:
-            self.__path.append(attr)
-
+        if attr not in self.__dict__: # or self.__dict__[attr] is None:
+            self._path.append(attr)
         return self
 
-    def __get_uri(self) -> str:
+    def _get_uri(self) -> str:
         """
-        __get_uri get URI path.
+        _get_uri get URI path.
 
         :return: URI
         :rtype: str
         """
-        return "/".join(self.__path).strip("/")
+        return "/".join(self._path).strip("/")
+
+    def _get_namespace(self) -> str:
+        """
+        _get_namespace get namespace path of the current function
+
+        :return: XML-RPC namespace.
+        :rtype: str
+        """
+        return ".".join(self._path).strip(".")
+
+    def _get_func_spec(self) -> str:
+        """
+        _get_func_spec get path as an XMl-RPC namespace and resolves function spec
+
+        :return: namespace path
+        :rtype: str
+        """
+        spec = None
+        ns = self._get_namespace()
+        for spec_ns in self._xmlrpc_spec:
+            if ns in spec_ns:
+                spec = spec_ns[ns]
+                break
+        return spec
+
+    def _map_parameters(self, *args) -> Dict:
+        """
+        _map_parameters maps parameters of the XML-RPC to the REST according to the spec.
+
+        :return: Data mapping
+        :rtype: Dict
+        """
+        spec = self._get_func_spec()
+        assert len(spec) == len(args), "Invalid parameters for the function {}: given: {}, expected: {}".format(
+            self._get_namespace(), args, ", ".join(['"{}" ({})'.format(list(item.keys())[0],
+                                                                       list(item.values())[0]) for item in spec]))
+        kwargs = {}
+        for arg_ntp, arg_val in zip(spec, args):
+            arg_name, arg_type = tuple(arg_ntp.items())[0]
+            e_arg_type = self._TYPEMAP.get(arg_type, str)
+            assert isinstance(arg_val, e_arg_type), "Argument {} has wrong type. Expected {}, got {}.".format(
+                arg_val, e_arg_type.__name__, type(arg_val).__name__
+            )
+            kwargs[arg_name] = arg_val
+
+        return kwargs
 
     def __call__(self, *args, **kwargs):
         """
         __call__ performs an actual REST call via requests
         """
-        print("args:", args)
-        print("kwargs:", kwargs)
-        url = "{}/{}".format(self.__root, self.__get_uri())
-        print("URL:", url)
+        return requests.post("{}/{}".format(self._root, self._get_uri()),
+                             data=self._map_parameters(*args)).json()
 
 
 class ServerProxy:
