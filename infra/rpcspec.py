@@ -62,7 +62,7 @@ class APIGen:
         if self.NAMESPACE not in path:
             return False
 
-        if "/test/" in path:
+        if "/test/" in path or "Exception" in path or "serializer" in path:
             return False
 
         return True
@@ -80,21 +80,26 @@ class APIGen:
         """
         data = []
         for src in self.sources:
-            # self._get_src_spec(src)  # Doc is very inaccurate :-(
             data.append(CodeSpec(src).spec)
 
-        print("# Automatically generated specs")
-        print("# XML-RPC calls:", len(data))
-        print()
-        print("xmlrpc:")
+        calls: int = 0
+        out: List = []
+
+        out.append("# Automatically generated specs")
+        #print("# XML-RPC calls:", len(data))
+        out.append("")
+        out.append("xmlrpc:")
         for ns in data:
             for f_ns in ns:
                 for namespace in f_ns:
-                    print("  - {}:".format(namespace))
+                    calls += 1
+                    out.append("  - {}:".format(namespace))
                     for arg in f_ns[namespace]:
                         for arg_name, arg_value in arg.items():
-                            print("    - {}: {}".format(arg_name, arg_value))
-                    print()
+                            out.append("    - {}: {}".format(arg_name, arg_value))
+                    out.append("")
+        out.insert(1, "# XML-RPC calls: {}".format(calls))
+        print(os.linesep.join(out))
 
 
 class CodeSpec:
