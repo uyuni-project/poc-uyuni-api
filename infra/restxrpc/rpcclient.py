@@ -17,7 +17,8 @@ Additionally, set the URL for XML-RPC specs download, e.g.:
 
 Author: bo@suse.de
 """
-from typing import Optional, Dict
+from typing import Optional, Dict, Union, Any
+import urllib.parse
 import datetime
 import requests
 import yaml
@@ -27,7 +28,7 @@ class RESTCall:
     """
     REST call object.
     """
-    _TYPEMAP = {
+    _TYPEMAP: Dict[str, Any] = {
         "string": str,
         "int": int,
         "bool": bool,
@@ -62,7 +63,19 @@ class RESTCall:
         :return: RESTCall object
         :rtype: RESTCall
         """
-        self._xmlrpc_spec = requests.get("{}/{}".format(self.__root, uri.strip("/")))
+        url: str = ""
+        r: urllib.parse.ParseResult = urllib.parse.urlparse(uri)
+        if not r.scheme:
+            url = "{}/{}".format(self._root, uri.strip("/"))
+        else:
+            url = uri
+        r = urllib.parse.urlparse(url)
+        if r.scheme == "file":
+            assert bool(r.path), "Path to the file spec should be defined!"
+            self._xmlrpc_spec = yaml.load(open(r.path).read()).get("xmlrpc")
+        else:
+            assert bool(r.path), "URN to the spec endpoint should be defined!"
+            self._xmlrpc_spec = requests.get(url).json()
         self.lock()
 
         return self
@@ -99,19 +112,21 @@ class RESTCall:
         """
         return ".".join(self._path).strip(".")
 
-    def _get_func_spec(self) -> str:
+    def _get_func_spec(self) -> Dict:
         """
         _get_func_spec get path as an XMl-RPC namespace and resolves function spec
 
         :return: namespace path
         :rtype: str
         """
-        spec = None
-        ns = self._get_namespace()
-        for spec_ns in self._xmlrpc_spec:
-            if ns in spec_ns:
-                spec = spec_ns[ns]
-                break
+        spec: Dict = {}
+        ns: str = self._get_namespace()
+        spec_ns: dict
+        if self._xmlrpc_spec:
+            for spec_ns in self._xmlrpc_spec:
+                if ns in spec_ns.keys():
+                    spec = spec_ns[ns]
+                    break
         return spec
 
     def _map_parameters(self, *args) -> Dict:
@@ -148,7 +163,8 @@ class ServerProxy:
     """
     REST client over XML-RPC.
     """
-    SPEC_URI = "/xmlrpc/spec"
+    SPEC_URN: str = "/xmlrpc/spec"
+    SPEC_URL: Optional[str] = None
 
     def __init__(self, url: str):
         """
@@ -159,5 +175,28 @@ class ServerProxy:
         """
         self._url = url
 
-    def __getattr__(self, attr):
-        return RESTCall(self._url, attr).set_spec_uri(self.SPEC_URI)
+    @staticmethod
+    def set_spec_url(url: str) -> None:
+        """
+        set_spec_url sets an alternative URL for the specs download.
+        It may be local URL file:// or any other. If this is set, the
+        default one won't be used.
+
+        :param url: URL
+        :type url: str
+        """
+        ServerProxy.SPEC_URL = url
+
+    @staticmethod
+    def set_spec_urn(urn: str) -> None:
+        """
+        set_spec_urn sets an alternative URN for the specs download.
+        Default is "/xmlrpc/spec".
+
+        :param uri: URN of the URI to the RPC endpoint.
+        :type uri: str
+        """
+        ServerProxy.SPEC_URN = urn
+
+    def __getattr__(self, attr) -> RESTCall:
+        return RESTCall(self._url, attr).set_spec_uri(ServerProxy.SPEC_URL or self.SPEC_URN)
