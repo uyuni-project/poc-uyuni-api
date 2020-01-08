@@ -1,5 +1,20 @@
 """
-RPC Client for REST over XML-RPC.
+Drop-in replacement RPC Client for REST over XML-RPC.
+
+Usage is to just change a usual import like this:
+
+    from xmlrpc.client import ServerProxy
+
+To this:
+
+    from restxrpc.rpcclient import ServerProxy
+
+
+Additionally, set the URL for XML-RPC specs download, e.g.:
+
+    ServerProxy.set_specs_url("http://myhost:8080/xmlrpcspecs")
+
+
 Author: bo@suse.de
 """
 from typing import Optional, Dict
