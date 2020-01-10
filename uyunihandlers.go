@@ -11,11 +11,13 @@ import (
 	"strings"
 )
 
-type UyuniRPCHandler interface {
-	Handler(context *gin.Context)
-	Bind(server *RPCServer)
-	GetHandlerUri() string
-	GetHTTPMethods() []string
+type UyuniXMLRPCSpecHandler struct {
+	baseURI    string
+	handlerURI string
+	rpc        *RPCServer
+	methodmap  map[string][]map[string][]map[string]string
+}
+
 }
 
 type UyuniXMLRPCHandler struct {
