@@ -26,7 +26,7 @@ type UyuniXMLRPCSpecHandler struct {
 func NewUyuniXMLRPCSpecHandler(methodmap map[string][]map[string][]map[string]string) *UyuniXMLRPCSpecHandler {
 	h := new(UyuniXMLRPCSpecHandler)
 	h.methodmap = methodmap
-	h.baseURI = "/uyuni-spec"
+	h.baseURI = "/xmlrpc"
 	h.handlerURI = h.baseURI + "/*spec"
 	return h
 }
@@ -51,10 +51,10 @@ func (h *UyuniXMLRPCSpecHandler) getRPCSpec() map[string][]map[string][]map[stri
 func (h *UyuniXMLRPCSpecHandler) Handler(context *gin.Context) {
 	method := strings.ReplaceAll(strings.TrimLeft(context.Param("spec"), "/"), "/", ".")
 	switch method {
-	case "xmlrpc":
-		context.YAML(200, h.getRPCSpec())
+	case "spec":
+		context.JSON(200, h.getRPCSpec())
 	default:
-		context.YAML(http.StatusBadRequest, gin.H{"error": "Method does not exists"})
+		context.JSON(http.StatusBadRequest, gin.H{"error": "Method does not exists"})
 	}
 }
 
