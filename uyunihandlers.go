@@ -48,6 +48,10 @@ func (h *UyuniXMLRPCHandler) GetHandlerUri() string {
 	return h.handlerURI
 }
 
+func (h *UyuniXMLRPCHandler) GetMethodSpec() map[string][]map[string][]map[string]string {
+	return h.methodMap
+}
+
 // Get methods map
 func (h *UyuniXMLRPCHandler) getMethodMap(method string) []map[string]string {
 	xmlrpcTree, exists := h.methodMap["xmlrpc"]
