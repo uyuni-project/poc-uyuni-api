@@ -22,7 +22,10 @@ import urllib.parse
 import datetime
 import requests
 import yaml
+import logging
 
+
+logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(asctime)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
 class RESTCall:
     """
@@ -66,7 +69,8 @@ class RESTCall:
         url: str = ""
         r: urllib.parse.ParseResult = urllib.parse.urlparse(uri)
         if not r.scheme:
-            url = "{}/{}".format(self._root, uri.strip("/"))
+            _url = urllib.parse.urlparse(self._root)
+            url = "{}://{}/{}".format(_url.scheme, _url.netloc, uri.strip("/"))
         else:
             url = uri
         r = urllib.parse.urlparse(url)
@@ -75,7 +79,8 @@ class RESTCall:
             self._xmlrpc_spec = yaml.load(open(r.path).read()).get("xmlrpc")
         else:
             assert bool(r.path), "URN to the spec endpoint should be defined!"
-            self._xmlrpc_spec = requests.get(url).json()
+            self._xmlrpc_spec = requests.get(url).json().get("xmlrpc")
+        assert bool(self._xmlrpc_spec), "Cannot create REST layer: No XML-RPC specs has been found!"
         self.lock()
 
         return self
@@ -155,8 +160,10 @@ class RESTCall:
         """
         __call__ performs an actual REST call via requests
         """
-        return requests.post("{}/{}".format(self._root, self._get_uri()),
-                             data=self._map_parameters(*args)).json()
+        url = "{}/{}".format(self._root, self._get_uri())
+        data = self._map_parameters(*args)
+        logging.debug("calling URL %s with data %s", url, data)
+        return requests.post(url, data=data).json()
 
 
 class ServerProxy:
