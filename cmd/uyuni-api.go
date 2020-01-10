@@ -15,6 +15,7 @@ func contextRun(ctx *cli.Context) error {
 
 	rpc := uyuniapi.NewRPCServer()
 	rpc.AddHandler(hdl)
+	rpc.AddHandler(uyuniapi.NewUyuniXMLRPCSpecHandler(hdl.GetMethodSpec()))
 	rpc.Setup(cfg).Start()
 
 	return nil
