@@ -11,6 +11,11 @@ import (
 	"strings"
 )
 
+/*
+Uyuni XML-RPC Specifications handler.
+Used by XML-RPC to REST translator library on the client side.
+*/
+
 type UyuniXMLRPCSpecHandler struct {
 	baseURI    string
 	handlerURI string
@@ -18,7 +23,45 @@ type UyuniXMLRPCSpecHandler struct {
 	methodmap  map[string][]map[string][]map[string]string
 }
 
+func NewUyuniXMLRPCSpecHandler(methodmap map[string][]map[string][]map[string]string) *UyuniXMLRPCSpecHandler {
+	h := new(UyuniXMLRPCSpecHandler)
+	h.methodmap = methodmap
+	h.baseURI = "/uyuni-spec"
+	h.handlerURI = h.baseURI + "/*spec"
+	return h
 }
+
+// Return supported methods for the proxy handler
+func (h *UyuniXMLRPCSpecHandler) GetHTTPMethods() []string {
+	return []string{"GET"}
+}
+
+func (h *UyuniXMLRPCSpecHandler) Bind(server *RPCServer) {
+	h.rpc = server
+}
+
+func (h *UyuniXMLRPCSpecHandler) GetHandlerUri() string {
+	return h.handlerURI
+}
+
+func (h *UyuniXMLRPCSpecHandler) getRPCSpec() map[string][]map[string][]map[string]string {
+	return h.methodmap
+}
+
+func (h *UyuniXMLRPCSpecHandler) Handler(context *gin.Context) {
+	method := strings.ReplaceAll(strings.TrimLeft(context.Param("spec"), "/"), "/", ".")
+	switch method {
+	case "xmlrpc":
+		context.YAML(200, h.getRPCSpec())
+	default:
+		context.YAML(http.StatusBadRequest, gin.H{"error": "Method does not exists"})
+	}
+}
+
+/*
+Uyuni XML-RPC Handler for handling
+all the XML-RPC methods to the REST protocol.
+*/
 
 type UyuniXMLRPCHandler struct {
 	baseURI    string
