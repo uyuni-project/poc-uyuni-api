@@ -1,6 +1,7 @@
 package uyuniapi
 
 import (
+	"log"
 	"reflect"
 )
 
@@ -55,8 +56,13 @@ func (agr *DataAggregator) getMuxResult() (interface{}, bool) {
 				}
 
 				for _, dataRef := range res.([]interface{}) {
-					if reflect.TypeOf(dataRef).Kind() == reflect.Map {
+					dataType := reflect.TypeOf(dataRef).Kind()
+					if dataType == reflect.Map {
 						data = append(data.([]interface{}), agr.remapIds(rpcRef, dataRef))
+					} else if dataType == reflect.String {
+						data = append(data.([]interface{}), dataRef)
+					} else {
+						log.Println("Data type", reflect.TypeOf(dataRef).Kind(), "is not yet supported")
 					}
 				}
 			}
