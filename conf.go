@@ -9,6 +9,7 @@ import (
 type configLayout struct {
 	Context struct {
 		Http_address string
+		Openapi_path string
 		Uyuni        struct {
 			Default map[string]interface{}
 			Hosts   map[string]map[string]interface{}
@@ -19,11 +20,13 @@ type configLayout struct {
 type APIConfig struct {
 	config       configLayout
 	DEFAULT_ADDR string
+	DEFAULT_OPENAPI_PATH string
 }
 
 func NewAPIConfig(path string) *APIConfig {
 	cfg := new(APIConfig)
 	cfg.DEFAULT_ADDR = ":8080"
+	cfg.DEFAULT_OPENAPI_PATH = "/usr/share/mgrapi/sui"
 	cfg.config = configLayout{}
 	cfg.readConfig(path)
 
@@ -43,6 +46,18 @@ func (cfg *APIConfig) readConfig(path string) {
 
 	if err := yaml.Unmarshal(mapBytes, &cfg.config); err != nil {
 		panic("Error parsing configuration:" + err.Error())
+	}
+}
+
+// Get OpenAPI path to a static UI
+func (cfg *APIConfig) GetOpenAPIStaticPath() string {
+	return cfg.config.Context.Openapi_path
+}
+
+// Set OpenAPI path
+func (cfg *APIConfig) SetOpenAPIStaticPath(path string) {
+	if path != "" && path != cfg.DEFAULT_OPENAPI_PATH {
+		cfg.config.Context.Openapi_path = path
 	}
 }
 

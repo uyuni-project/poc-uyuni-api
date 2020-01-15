@@ -45,7 +45,7 @@ func (srv *RPCServer) Setup(config *APIConfig) *RPCServer {
 	if !srv.setup {
 		srv.cfg = config
 
-		// Add context sources
+		// Add XML-RPC context sources
 		for fqdn := range srv.cfg.GetHosts("uyuni") {
 			srv.vdm.AddContext(fqdn)
 		}
@@ -55,6 +55,10 @@ func (srv *RPCServer) Setup(config *APIConfig) *RPCServer {
 		// Basic router middleware setup
 		srv.router.Use(gin.Logger())
 		srv.router.Use(gin.Recovery())
+
+		// Static OpenAPI server
+		srv.router.Static("/doc", srv.cfg.GetOpenAPIStaticPath())
+
 		srv.setup = true
 	}
 
@@ -66,7 +70,7 @@ func (srv *RPCServer) Start() {
 		panic("Setup first!")
 	}
 
-	err := srv.router.Run(":8080")
+	err := srv.router.Run(srv.cfg.GetHTTPAddress())
 	if err != nil {
 		panic(err)
 	}
