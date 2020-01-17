@@ -173,7 +173,7 @@ class ServerProxy:
     SPEC_URN: str = "/xmlrpc/spec"
     SPEC_URL: Optional[str] = None
 
-    def __init__(self, url: str):
+    def __init__(self, url: str, *args, **kwargs):
         """
         __init__ of ServerProxy class.
 
@@ -207,3 +207,7 @@ class ServerProxy:
 
     def __getattr__(self, attr) -> RESTCall:
         return RESTCall(self._url, attr).set_spec_uri(ServerProxy.SPEC_URL or self.SPEC_URN)
+
+
+# Backward compatibility for xmlrpclib
+Server = ServerProxy
