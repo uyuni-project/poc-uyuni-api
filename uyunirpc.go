@@ -188,6 +188,8 @@ func (rpmc *RPCDemux) GetSIDMarker() *RPCSessionToken {
 // Call multiple systems at once, aggregate
 func (rpmc *RPCDemux) Call(method string, args ...interface{}) (interface{}, error) {
 	demux := NewDataAggregator(rpmc.vidmanager)
+	errors := 0
+	var lastError error
 	for fqdn := range rpmc.clients {
 		c_ref := rpmc.clients[fqdn]
 
@@ -216,10 +218,16 @@ func (rpmc *RPCDemux) Call(method string, args ...interface{}) (interface{}, err
 		ret, err := c_ref.Call(method, _args...)
 
 		if err != nil {
-			panic(err)
+			errors++
+			lastError = err
+		} else {
+			demux.aggregate(fqdn, ret)
+		}
 		}
 
-		demux.aggregate(fqdn, ret)
+	// Fail only when all servers failed at once
+	if errors == len(rpmc.clients) {
+		panic(lastError)
 	}
 
 	return demux.Multiplex(), nil
