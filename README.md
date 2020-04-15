@@ -1,6 +1,6 @@
 # Uyuni API Gateway
 
-This is the API Gateway implementation for Uyuni Project and/or SUSE Manager. Built on top of [Gin Gonic](https://github.com/gin-gonic).
+This is an **experimental** API Gateway implementation for Uyuni Project and/or SUSE Manager. Built on top of [Gin Gonic](https://github.com/gin-gonic).
 
 This project provides the following:
 
@@ -21,8 +21,3 @@ Needs to be still done/finished:
 - REST returns `nil` instead of an empty array, if such happens on Uyuni Server. This causes backward-incompatibility crashes for 3rd party software, such as Spacecmd.
 
 - REST does not yet support method overloading. This should be done by type detection on the API signatures.
-
-
-## Similar Projects
-
-[Hub XMLRPC API](https://github.com/uyuni-project/hub-xmlrpc-api)
