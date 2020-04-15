@@ -1,3 +1,5 @@
+<p><img src="https://img.shields.io/badge/EXPERIMENTAL-WIP-red" /></p>
+
 # Uyuni API Gateway
 
 This is an **experimental** API Gateway implementation for Uyuni Project and/or SUSE Manager. Built on top of [Gin Gonic](https://github.com/gin-gonic).
